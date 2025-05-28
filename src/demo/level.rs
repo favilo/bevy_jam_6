@@ -1,9 +1,15 @@
 //! Spawn the main level.
 
 use bevy::prelude::*;
+use bevy_asset_loader::{
+    asset_collection::AssetCollection,
+    loading_state::{
+        LoadingStateAppExt,
+        config::{ConfigureLoadingState, LoadingStateConfig},
+    },
+};
 
 use crate::{
-    asset_tracking::LoadResource,
     audio::music,
     demo::player::{PlayerAssets, player},
     screens::GameState,
@@ -11,23 +17,16 @@ use crate::{
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<LevelAssets>();
-    app.load_resource::<LevelAssets>();
+    app.configure_loading_state(
+        LoadingStateConfig::new(GameState::Loading).load_collection::<LevelAssets>(),
+    );
 }
 
-#[derive(Resource, Asset, Clone, Reflect)]
+#[derive(Resource, AssetCollection, Clone, Reflect)]
 #[reflect(Resource)]
 pub struct LevelAssets {
-    #[dependency]
+    #[asset(path = "audio/music/Fluffing A Duck.ogg")]
     music: Handle<AudioSource>,
-}
-
-impl FromWorld for LevelAssets {
-    fn from_world(world: &mut World) -> Self {
-        let assets = world.resource::<AssetServer>();
-        Self {
-            music: assets.load("audio/music/Fluffing A Duck.ogg"),
-        }
-    }
 }
 
 /// A system that spawns the main level.

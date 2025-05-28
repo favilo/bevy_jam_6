@@ -3,7 +3,6 @@
 // Disable console on Windows for non-dev builds.
 #![cfg_attr(not(feature = "dev"), windows_subsystem = "windows")]
 
-mod asset_tracking;
 mod audio;
 mod demo;
 #[cfg(feature = "dev")]
@@ -12,7 +11,10 @@ mod screens;
 mod theme;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
+use bevy_asset_loader::loading_state::{LoadingState, LoadingStateAppExt};
 use bevy_enhanced_input::EnhancedInputPlugin;
+use iyes_progress::ProgressPlugin;
+use screens::{GameState, MenuScreen};
 
 fn main() -> AppExit {
     App::new().add_plugins(AppPlugin).run()
@@ -56,11 +58,15 @@ impl Plugin for AppPlugin {
                     ..default()
                 }),
             EnhancedInputPlugin,
+            ProgressPlugin::<GameState>::new()
+                .with_state_transition(GameState::Loading, GameState::Menu),
         ));
 
+        app.init_state::<GameState>();
+        app.add_sub_state::<MenuScreen>();
+        app.add_loading_state(LoadingState::new(GameState::Loading));
         // Add other plugins.
         app.add_plugins((
-            asset_tracking::plugin,
             demo::plugin,
             #[cfg(feature = "dev")]
             dev_tools::plugin,

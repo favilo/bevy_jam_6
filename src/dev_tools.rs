@@ -1,6 +1,9 @@
 //! Development tools for the game. This plugin is only enabled in dev builds.
 
-use bevy::{dev_tools::states::log_transitions, prelude::*, ui::UiDebugOptions};
+use bevy::{
+    dev_tools::states::log_transitions, diagnostic::FrameTimeDiagnosticsPlugin, prelude::*,
+    ui::UiDebugOptions,
+};
 use bevy_enhanced_input::{
     events::Fired,
     prelude::{Actions, Binding, InputAction, InputContext, InputContextAppExt, Press},
@@ -19,6 +22,7 @@ pub(super) fn plugin(app: &mut App) {
             enable_multipass_for_primary_context: false,
         },
         WorldInspectorPlugin::default().run_if(|options: Res<UiDebugOptions>| options.enabled),
+        FrameTimeDiagnosticsPlugin::default(),
     ));
     // Log `Screen` state transitions.
     app.add_systems(Update, log_transitions::<GameState>);

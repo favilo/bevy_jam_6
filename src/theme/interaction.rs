@@ -1,13 +1,22 @@
 use bevy::prelude::*;
+use bevy_asset_loader::{
+    asset_collection::AssetCollection,
+    loading_state::{
+        LoadingStateAppExt,
+        config::{ConfigureLoadingState, LoadingStateConfig},
+    },
+};
 
-use crate::{asset_tracking::LoadResource, audio::sound_effect};
+use crate::{audio::sound_effect, screens::GameState};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<InteractionPalette>();
     app.add_systems(Update, apply_interaction_palette);
 
     app.register_type::<InteractionAssets>();
-    app.load_resource::<InteractionAssets>();
+    app.configure_loading_state(
+        LoadingStateConfig::new(GameState::Loading).load_collection::<InteractionAssets>(),
+    );
     app.add_observer(play_on_hover_sound_effect);
     app.add_observer(play_on_click_sound_effect);
 }
@@ -39,23 +48,13 @@ fn apply_interaction_palette(
     }
 }
 
-#[derive(Resource, Asset, Clone, Reflect)]
+#[derive(Resource, AssetCollection, Clone, Reflect)]
 #[reflect(Resource)]
 struct InteractionAssets {
-    #[dependency]
+    #[asset(path = "audio/sound_effects/button_hover.ogg")]
     hover: Handle<AudioSource>,
-    #[dependency]
+    #[asset(path = "audio/sound_effects/button_click.ogg")]
     click: Handle<AudioSource>,
-}
-
-impl FromWorld for InteractionAssets {
-    fn from_world(world: &mut World) -> Self {
-        let assets = world.resource::<AssetServer>();
-        Self {
-            hover: assets.load("audio/sound_effects/button_hover.ogg"),
-            click: assets.load("audio/sound_effects/button_click.ogg"),
-        }
-    }
 }
 
 fn play_on_hover_sound_effect(

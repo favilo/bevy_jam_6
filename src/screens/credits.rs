@@ -1,15 +1,27 @@
 //! A credits screen that can be accessed from the title screen.
 
 use bevy::{ecs::spawn::SpawnIter, prelude::*, ui::Val::*};
+use bevy_asset_loader::{
+    asset_collection::AssetCollection,
+    loading_state::{
+        LoadingStateAppExt,
+        config::{ConfigureLoadingState, LoadingStateConfig},
+    },
+};
 
-use crate::{asset_tracking::LoadResource, audio::music, screens::MenuScreen, theme::prelude::*};
+use crate::{audio::music, screens::MenuScreen, theme::prelude::*};
+
+use super::GameState;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(OnEnter(MenuScreen::Credits), spawn_credits_screen);
-
     app.register_type::<CreditsAssets>();
-    app.load_resource::<CreditsAssets>();
-    app.add_systems(OnEnter(MenuScreen::Credits), start_credits_music);
+    app.configure_loading_state(
+        LoadingStateConfig::new(GameState::Loading).load_collection::<CreditsAssets>(),
+    );
+    app.add_systems(
+        OnEnter(MenuScreen::Credits),
+        (spawn_credits_screen, start_credits_music),
+    );
 }
 
 fn spawn_credits_screen(mut commands: Commands) {
@@ -77,20 +89,11 @@ fn enter_title_screen(_: Trigger<Pointer<Click>>, mut next_screen: ResMut<NextSt
     next_screen.set(MenuScreen::Title);
 }
 
-#[derive(Resource, Asset, Clone, Reflect)]
+#[derive(Resource, AssetCollection, Clone, Reflect)]
 #[reflect(Resource)]
 struct CreditsAssets {
-    #[dependency]
+    #[asset(path = "audio/music/Monkeys Spinning Monkeys.ogg")]
     music: Handle<AudioSource>,
-}
-
-impl FromWorld for CreditsAssets {
-    fn from_world(world: &mut World) -> Self {
-        let assets = world.resource::<AssetServer>();
-        Self {
-            music: assets.load("audio/music/Monkeys Spinning Monkeys.ogg"),
-        }
-    }
 }
 
 fn start_credits_music(mut commands: Commands, credits_music: Res<CreditsAssets>) {

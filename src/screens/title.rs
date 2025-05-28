@@ -2,7 +2,7 @@
 
 use bevy::prelude::*;
 
-use crate::{asset_tracking::ResourceHandles, screens::MenuScreen, theme::prelude::*};
+use crate::{screens::MenuScreen, theme::prelude::*};
 
 use super::GameState;
 
@@ -16,38 +16,38 @@ fn spawn_title_screen(mut commands: Commands) {
         StateScoped(MenuScreen::Title),
         #[cfg(not(target_family = "wasm"))]
         children![
-            widget::button("Play", enter_loading_or_gameplay_screen),
+            widget::button("Play", enter_gameplay_screen),
             widget::button("Settings", enter_settings_screen),
             widget::button("Credits", enter_credits_screen),
             widget::button("Exit", exit_app),
         ],
         #[cfg(target_family = "wasm")]
         children![
-            widget::button("Play", enter_loading_or_gameplay_screen),
+            widget::button("Play", enter_gameplay_screen),
             widget::button("Settings", enter_settings_screen),
             widget::button("Credits", enter_credits_screen),
         ],
     ));
 }
 
-fn enter_loading_or_gameplay_screen(
+fn enter_gameplay_screen(
     _: Trigger<Pointer<Click>>,
-    resource_handles: Res<ResourceHandles>,
-    mut next_screen: ResMut<NextState<MenuScreen>>,
-    mut next_state: ResMut<NextState<GameState>>,
+    mut next_game_state: ResMut<NextState<GameState>>,
 ) {
-    if resource_handles.is_all_done() {
-        next_state.set(GameState::Playing);
-    } else {
-        next_screen.set(MenuScreen::Loading);
-    }
+    next_game_state.set(GameState::Playing);
 }
 
-fn enter_settings_screen(_: Trigger<Pointer<Click>>, mut next_screen: ResMut<NextState<MenuScreen>>) {
+fn enter_settings_screen(
+    _: Trigger<Pointer<Click>>,
+    mut next_screen: ResMut<NextState<MenuScreen>>,
+) {
     next_screen.set(MenuScreen::Settings);
 }
 
-fn enter_credits_screen(_: Trigger<Pointer<Click>>, mut next_screen: ResMut<NextState<MenuScreen>>) {
+fn enter_credits_screen(
+    _: Trigger<Pointer<Click>>,
+    mut next_screen: ResMut<NextState<MenuScreen>>,
+) {
     next_screen.set(MenuScreen::Credits);
 }
 #[cfg(not(target_family = "wasm"))]

@@ -2,7 +2,6 @@
 
 mod credits;
 mod gameplay;
-mod loading;
 mod settings;
 mod splash;
 mod title;
@@ -14,8 +13,6 @@ use bevy_enhanced_input::{
 };
 
 pub(super) fn plugin(app: &mut App) {
-    app.init_state::<GameState>();
-    app.add_sub_state::<MenuScreen>();
     app.add_input_context::<MenuContext>();
 
     app.add_observer(go_back_to_parent_screen)
@@ -24,7 +21,6 @@ pub(super) fn plugin(app: &mut App) {
     app.add_plugins((
         credits::plugin,
         gameplay::plugin,
-        loading::plugin,
         settings::plugin,
         splash::plugin,
         title::plugin,
@@ -37,6 +33,7 @@ pub(super) fn plugin(app: &mut App) {
 #[states(scoped_entities)]
 pub enum GameState {
     #[default]
+    Loading,
     Menu,
     Playing,
 }
@@ -47,11 +44,9 @@ pub enum GameState {
 #[states(scoped_entities)]
 pub enum MenuScreen {
     #[default]
-    Splash,
     Title,
     Credits,
     Settings,
-    Loading,
 }
 
 impl MenuScreen {

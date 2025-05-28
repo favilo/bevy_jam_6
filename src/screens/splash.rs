@@ -4,13 +4,14 @@ use bevy::{
     image::{ImageLoaderSettings, ImageSampler},
     prelude::*,
 };
+use iyes_progress::{Progress, ProgressReturningSystem};
 
-use crate::{AppSystems, screens::MenuScreen, theme::prelude::*};
+use crate::{AppSystems, screens::GameState, theme::prelude::*};
 
 pub(super) fn plugin(app: &mut App) {
     // Spawn splash screen.
     app.insert_resource(ClearColor(SPLASH_BACKGROUND_COLOR));
-    app.add_systems(OnEnter(MenuScreen::Splash), spawn_splash_screen);
+    app.add_systems(OnEnter(GameState::Loading), spawn_splash_screen);
 
     // Animate splash screen.
     app.add_systems(
@@ -19,20 +20,22 @@ pub(super) fn plugin(app: &mut App) {
             tick_fade_in_out.in_set(AppSystems::TickTimers),
             apply_fade_in_out.in_set(AppSystems::Update),
         )
-            .run_if(in_state(MenuScreen::Splash)),
+            .run_if(in_state(GameState::Loading)),
     );
 
     // Add splash timer.
     app.register_type::<SplashTimer>();
-    app.add_systems(OnEnter(MenuScreen::Splash), insert_splash_timer);
-    app.add_systems(OnExit(MenuScreen::Splash), remove_splash_timer);
+    app.add_systems(OnEnter(GameState::Loading), insert_splash_timer);
+    app.add_systems(OnExit(GameState::Loading), remove_splash_timer);
     app.add_systems(
         Update,
         (
             tick_splash_timer.in_set(AppSystems::TickTimers),
-            check_splash_timer.in_set(AppSystems::Update),
+            check_splash_timer
+                .track_progress::<GameState>()
+                .in_set(AppSystems::Update),
         )
-            .run_if(in_state(MenuScreen::Splash)),
+            .run_if(in_state(GameState::Loading)),
     );
 }
 
@@ -44,7 +47,7 @@ fn spawn_splash_screen(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         widget::ui_root("Splash Screen"),
         BackgroundColor(SPLASH_BACKGROUND_COLOR),
-        StateScoped(MenuScreen::Splash),
+        StateScoped(GameState::Loading),
         children![(
             Name::new("Splash image"),
             Node {
@@ -127,8 +130,6 @@ fn tick_splash_timer(time: Res<Time>, mut timer: ResMut<SplashTimer>) {
     timer.0.tick(time.delta());
 }
 
-fn check_splash_timer(timer: ResMut<SplashTimer>, mut next_screen: ResMut<NextState<MenuScreen>>) {
-    if timer.0.just_finished() {
-        next_screen.set(MenuScreen::Title);
-    }
+fn check_splash_timer(timer: ResMut<SplashTimer>) -> Progress {
+    timer.0.finished().into()
 }
