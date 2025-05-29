@@ -43,7 +43,7 @@ pub fn header(text: impl Into<String>) -> impl Bundle {
 pub fn label(text: impl Into<String>) -> impl Bundle {
     let text = text.into();
     (
-        Name::new(format!("Label(\"{text}\")")),
+        Name::new(format!(r#"Label("{text}")"#)),
         Text(text),
         TextFont::from_font_size(24.0),
         TextColor(LABEL_TEXT),
@@ -107,7 +107,7 @@ where
     let text = text.into();
     let action = IntoObserverSystem::into_system(action);
     (
-        Name::new(format!("Button(\"{text}\")")),
+        Name::new(format!(r#"Button("{text}")"#)),
         Node::default(),
         Children::spawn(SpawnWith(|parent: &mut ChildSpawner| {
             parent
