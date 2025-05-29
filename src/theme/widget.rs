@@ -41,9 +41,10 @@ pub fn header(text: impl Into<String>) -> impl Bundle {
 
 /// A simple text label.
 pub fn label(text: impl Into<String>) -> impl Bundle {
+    let text = text.into();
     (
-        Name::new("Label"),
-        Text(text.into()),
+        Name::new(format!("Label(\"{text}\")")),
+        Text(text),
         TextFont::from_font_size(24.0),
         TextColor(LABEL_TEXT),
     )

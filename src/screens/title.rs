@@ -1,6 +1,7 @@
 //! The title screen that appears when the game starts.
 
 use bevy::prelude::*;
+use bevy_simple_subsecond_system::hot;
 
 use crate::{screens::MenuScreen, theme::prelude::*};
 
@@ -10,20 +11,21 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(MenuScreen::Title), spawn_title_screen);
 }
 
+#[hot(rerun_on_hot_patch = true)]
 fn spawn_title_screen(mut commands: Commands) {
     commands.spawn((
         widget::ui_root("Title Screen"),
         StateScoped(MenuScreen::Title),
         #[cfg(not(target_family = "wasm"))]
         children![
-            widget::button("Play", enter_gameplay_screen),
+            widget::button("Start", enter_gameplay_screen),
             widget::button("Settings", enter_settings_screen),
             widget::button("Credits", enter_credits_screen),
             widget::button("Exit", exit_app),
         ],
         #[cfg(target_family = "wasm")]
         children![
-            widget::button("Play", enter_gameplay_screen),
+            widget::button("Start", enter_gameplay_screen),
             widget::button("Settings", enter_settings_screen),
             widget::button("Credits", enter_credits_screen),
         ],

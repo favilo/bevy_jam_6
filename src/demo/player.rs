@@ -13,6 +13,7 @@ use bevy_enhanced_input::{
     prelude::{Actions, Binding, DeadZone, InputAction, InputContext, InputContextAppExt, Press},
     preset::{Axial, Cardinal},
 };
+use bevy_simple_subsecond_system::hot;
 
 use crate::{
     AppSystems,
@@ -85,6 +86,7 @@ struct Pause;
 #[input_action(output = Vec2)]
 struct Move;
 
+#[hot]
 fn player_binding(trigger: Trigger<Binding<Player>>, mut actions: Query<&mut Actions<Player>>) {
     let mut actions = actions.get_mut(trigger.target()).unwrap();
     actions
@@ -102,6 +104,7 @@ fn player_binding(trigger: Trigger<Binding<Player>>, mut actions: Query<&mut Act
         .with_modifiers(DeadZone::default());
 }
 
+#[hot]
 fn record_player_directional_input(
     mut controller_query: Query<(&mut MovementController, &Actions<Player>)>,
 ) {

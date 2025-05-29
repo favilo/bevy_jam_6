@@ -14,6 +14,7 @@
 //! consider using a [fixed timestep](https://github.com/bevyengine/bevy/blob/main/examples/movement/physics_in_fixed_timestep.rs).
 
 use bevy::{prelude::*, window::PrimaryWindow};
+use bevy_simple_subsecond_system::hot;
 
 use crate::AppSystems;
 
@@ -53,6 +54,7 @@ impl Default for MovementController {
     }
 }
 
+#[hot]
 fn apply_movement(
     time: Res<Time>,
     mut movement_query: Query<(&MovementController, &mut Transform)>,
