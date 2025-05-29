@@ -1,6 +1,7 @@
 //! The title screen that appears when the game starts.
 
 use bevy::prelude::*;
+#[cfg(feature = "dev_native")]
 use bevy_simple_subsecond_system::hot;
 
 use crate::{screens::MenuScreen, theme::prelude::*};
@@ -11,7 +12,7 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(MenuScreen::Title), spawn_title_screen);
 }
 
-#[hot(rerun_on_hot_patch = true)]
+#[cfg_attr(feature = "dev_native", hot(rerun_on_hot_patch = true))]
 fn spawn_title_screen(mut commands: Commands) {
     commands.spawn((
         widget::ui_root("Title Screen"),

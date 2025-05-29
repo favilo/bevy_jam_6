@@ -3,6 +3,7 @@
 //! Settings and accessibility options should go here.
 
 use bevy::{audio::Volume, prelude::*, ui::Val::*};
+#[cfg(feature = "dev_native")]
 use bevy_simple_subsecond_system::hot;
 
 use crate::{screens::MenuScreen, theme::prelude::*};
@@ -17,7 +18,7 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
-#[hot]
+#[cfg_attr(feature = "dev_native", hot)]
 fn spawn_settings_screen(mut commands: Commands) {
     commands.spawn((
         widget::ui_root("Settings Screen"),

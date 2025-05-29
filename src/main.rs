@@ -13,6 +13,7 @@ mod theme;
 use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_asset_loader::loading_state::{LoadingState, LoadingStateAppExt};
 use bevy_enhanced_input::EnhancedInputPlugin;
+#[cfg(feature = "dev_native")]
 use bevy_simple_subsecond_system::SimpleSubsecondPlugin;
 use iyes_progress::ProgressPlugin;
 use screens::{GameState, MenuScreen};
@@ -61,6 +62,7 @@ impl Plugin for AppPlugin {
             EnhancedInputPlugin,
             ProgressPlugin::<GameState>::new()
                 .with_state_transition(GameState::Loading, GameState::Menu),
+            #[cfg(feature = "dev_native")]
             SimpleSubsecondPlugin::default(),
         ));
 
