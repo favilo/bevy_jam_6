@@ -134,6 +134,14 @@ pub struct PlayerAssets {
     #[asset(path = "images/ducky.png")]
     #[asset(image(sampler(filter = nearest)))]
     ducky: Handle<Image>,
-    #[asset(path = "audio/sound_effects", collection(typed))]
+    #[asset(
+        paths(
+            "audio/sound_effects/step1.ogg",
+            "audio/sound_effects/step2.ogg",
+            "audio/sound_effects/step3.ogg",
+            "audio/sound_effects/step4.ogg"
+        ),
+        collection(typed)
+    )]
     pub steps: Vec<Handle<AudioSource>>,
 }
