@@ -14,10 +14,8 @@
 //! consider using a [fixed timestep](https://github.com/bevyengine/bevy/blob/main/examples/movement/physics_in_fixed_timestep.rs).
 
 use bevy::{prelude::*, window::PrimaryWindow};
-#[cfg(feature = "dev_native")]
-use bevy_simple_subsecond_system::hot;
 
-use crate::AppSystems;
+use crate::{AppSystems, PausableSystems};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<MovementController>();
@@ -27,7 +25,8 @@ pub(super) fn plugin(app: &mut App) {
         Update,
         (apply_movement, apply_screen_wrap)
             .chain()
-            .in_set(AppSystems::Update),
+            .in_set(AppSystems::Update)
+            .in_set(PausableSystems),
     );
 }
 
@@ -55,7 +54,6 @@ impl Default for MovementController {
     }
 }
 
-#[cfg_attr(feature = "dev_native", hot)]
 fn apply_movement(
     time: Res<Time>,
     mut movement_query: Query<(&MovementController, &mut Transform)>,

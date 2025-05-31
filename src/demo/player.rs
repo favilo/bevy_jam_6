@@ -13,16 +13,15 @@ use bevy_enhanced_input::{
     prelude::{Actions, Binding, DeadZone, InputAction, InputContext, InputContextAppExt, Press},
     preset::{Axial, Cardinal},
 };
-#[cfg(feature = "dev_native")]
-use bevy_simple_subsecond_system::hot;
 
 use crate::{
-    AppSystems,
+    AppSystems, PausableSystems, Pause,
     demo::{
         animation::PlayerAnimation,
         movement::{MovementController, ScreenWrap},
     },
-    screens::{GameState, MenuScreen},
+    menu::Menu,
+    state::GameState,
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -36,10 +35,12 @@ pub(super) fn plugin(app: &mut App) {
 
     // Record directional input as movement controls.
     app.add_observer(player_binding);
-    app.add_observer(quit_to_main_menu);
+    app.add_observer(pause_game);
     app.add_systems(
         Update,
-        record_player_directional_input.in_set(AppSystems::RecordInput),
+        record_player_directional_input
+            .in_set(AppSystems::RecordInput)
+            .in_set(PausableSystems),
     );
 }
 
@@ -77,21 +78,21 @@ pub fn player(
 }
 
 #[derive(InputContext, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
+#[input_context(priority = 0)]
 struct Player;
 
 #[derive(InputAction, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
 #[input_action(output = bool)]
-struct Pause;
+struct PauseGame;
 
 #[derive(InputAction, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
 #[input_action(output = Vec2)]
 struct Move;
 
-#[cfg_attr(feature = "dev_native", hot)]
 fn player_binding(trigger: Trigger<Binding<Player>>, mut actions: Query<&mut Actions<Player>>) {
     let mut actions = actions.get_mut(trigger.target()).unwrap();
     actions
-        .bind::<Pause>()
+        .bind::<PauseGame>()
         .to((KeyCode::Escape, GamepadButton::Start))
         .with_conditions(Press::new(0.2));
 
@@ -105,7 +106,6 @@ fn player_binding(trigger: Trigger<Binding<Player>>, mut actions: Query<&mut Act
         .with_modifiers(DeadZone::default());
 }
 
-#[cfg_attr(feature = "dev_native", hot)]
 fn record_player_directional_input(
     mut controller_query: Query<(&mut MovementController, &Actions<Player>)>,
 ) {
@@ -119,13 +119,14 @@ fn record_player_directional_input(
     }
 }
 
-fn quit_to_main_menu(
-    _: Trigger<Fired<Pause>>,
-    mut next_state: ResMut<NextState<GameState>>,
-    mut next_screen: ResMut<NextState<MenuScreen>>,
+fn pause_game(
+    _: Trigger<Fired<PauseGame>>,
+    mut next_screen: ResMut<NextState<Menu>>,
+    mut next_pause: ResMut<NextState<Pause>>,
 ) {
-    next_state.set(GameState::Menu);
-    next_screen.set(MenuScreen::Title);
+    tracing::debug!("Pausing the game");
+    next_screen.set(Menu::Pause);
+    next_pause.set(Pause(true));
 }
 
 #[derive(Resource, AssetCollection, Clone, Reflect)]

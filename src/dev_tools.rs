@@ -10,7 +10,7 @@ use bevy_enhanced_input::{
 };
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
 
-use crate::screens::{GameState, MenuScreen};
+use crate::{Pause, menu::Menu, state::GameState};
 
 #[derive(InputContext, Reflect, Debug, Default)]
 pub struct DebugContext;
@@ -26,7 +26,8 @@ pub(super) fn plugin(app: &mut App) {
     ));
     // Log `Screen` state transitions.
     app.add_systems(Update, log_transitions::<GameState>);
-    app.add_systems(Update, log_transitions::<MenuScreen>);
+    app.add_systems(Update, log_transitions::<Menu>);
+    app.add_systems(Update, log_transitions::<Pause>);
 
     app.add_systems(Startup, |mut commands: Commands| {
         commands.spawn((

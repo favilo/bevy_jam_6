@@ -9,7 +9,7 @@ use rand::prelude::*;
 use std::time::Duration;
 
 use crate::{
-    AppSystems,
+    AppSystems, PausableSystems,
     audio::sound_effect,
     demo::{movement::MovementController, player::PlayerAssets},
 };
@@ -29,7 +29,8 @@ pub(super) fn plugin(app: &mut App) {
                 .chain()
                 .run_if(resource_exists::<PlayerAssets>)
                 .in_set(AppSystems::Update),
-        ),
+        )
+            .in_set(PausableSystems),
     );
 }
 
@@ -83,7 +84,7 @@ fn trigger_step_sound_effect(
             && animation.changed()
             && (animation.frame == 2 || animation.frame == 5)
         {
-            let rng = &mut rand::thread_rng();
+            let rng = &mut rand::rng();
             let random_step = player_assets.steps.choose(rng).unwrap().clone();
             commands.spawn(sound_effect(random_step));
         }

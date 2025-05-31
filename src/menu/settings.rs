@@ -3,26 +3,23 @@
 //! Settings and accessibility options should go here.
 
 use bevy::{audio::Volume, prelude::*, ui::Val::*};
-#[cfg(feature = "dev_native")]
-use bevy_simple_subsecond_system::hot;
+// #[cfg(feature = "dev_native")]
+// use bevy_simple_subsecond_system::hot;
 
-use crate::{screens::MenuScreen, theme::prelude::*};
+use crate::{menu::Menu, theme::prelude::*};
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(OnEnter(MenuScreen::Settings), spawn_settings_screen);
+    app.add_systems(OnEnter(Menu::Settings), spawn_settings_screen);
 
     app.register_type::<GlobalVolumeLabel>();
-    app.add_systems(
-        Update,
-        update_volume_label.run_if(in_state(MenuScreen::Settings)),
-    );
+    app.add_systems(Update, update_volume_label.run_if(in_state(Menu::Settings)));
 }
 
-#[cfg_attr(feature = "dev_native", hot)]
+// #[cfg_attr(feature = "dev_native", hot)]
 fn spawn_settings_screen(mut commands: Commands) {
     commands.spawn((
         widget::ui_root("Settings Screen"),
-        StateScoped(MenuScreen::Settings),
+        StateScoped(Menu::Settings),
         children![
             widget::header("Settings"),
             settings_grid(),
@@ -102,6 +99,6 @@ fn update_volume_label(
     label.0 = format!("{percent:3.0}%");
 }
 
-fn enter_title_screen(_: Trigger<Pointer<Click>>, mut next_screen: ResMut<NextState<MenuScreen>>) {
-    next_screen.set(MenuScreen::Title);
+fn enter_title_screen(_: Trigger<Pointer<Click>>, mut next_screen: ResMut<NextState<Menu>>) {
+    next_screen.set(Menu::Main);
 }

@@ -12,7 +12,7 @@ use bevy_asset_loader::{
 use crate::{
     audio::music,
     demo::player::{PlayerAssets, player},
-    screens::GameState,
+    state::GameState,
 };
 
 pub(super) fn plugin(app: &mut App) {

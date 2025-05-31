@@ -9,9 +9,7 @@ use bevy_asset_loader::{
     },
 };
 
-use crate::{audio::music, screens::MenuScreen, theme::prelude::*};
-
-use super::GameState;
+use crate::{audio::music, menu::Menu, state::GameState, theme::prelude::*};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<CreditsAssets>();
@@ -19,7 +17,7 @@ pub(super) fn plugin(app: &mut App) {
         LoadingStateConfig::new(GameState::Loading).load_collection::<CreditsAssets>(),
     );
     app.add_systems(
-        OnEnter(MenuScreen::Credits),
+        OnEnter(Menu::Credits),
         (spawn_credits_screen, start_credits_music),
     );
 }
@@ -27,7 +25,7 @@ pub(super) fn plugin(app: &mut App) {
 fn spawn_credits_screen(mut commands: Commands) {
     commands.spawn((
         widget::ui_root("Credits Screen"),
-        StateScoped(MenuScreen::Credits),
+        StateScoped(Menu::Credits),
         children![
             widget::header("Created by"),
             created_by(),
@@ -85,8 +83,8 @@ fn grid(content: Vec<[&'static str; 2]>) -> impl Bundle {
     )
 }
 
-fn enter_title_screen(_: Trigger<Pointer<Click>>, mut next_screen: ResMut<NextState<MenuScreen>>) {
-    next_screen.set(MenuScreen::Title);
+fn enter_title_screen(_: Trigger<Pointer<Click>>, mut next_screen: ResMut<NextState<Menu>>) {
+    next_screen.set(Menu::Main);
 }
 
 #[derive(Resource, AssetCollection, Clone, Reflect)]
@@ -99,7 +97,7 @@ struct CreditsAssets {
 fn start_credits_music(mut commands: Commands, credits_music: Res<CreditsAssets>) {
     commands.spawn((
         Name::new("Credits Music"),
-        StateScoped(MenuScreen::Credits),
+        StateScoped(Menu::Credits),
         music(credits_music.music.clone()),
     ));
 }

@@ -7,7 +7,7 @@ use bevy_asset_loader::{
     },
 };
 
-use crate::{audio::sound_effect, screens::GameState};
+use crate::{audio::sound_effect, state::GameState};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<InteractionPalette>();

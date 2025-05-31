@@ -7,16 +7,22 @@ mod audio;
 mod demo;
 #[cfg(feature = "dev")]
 mod dev_tools;
+mod menu;
 mod screens;
+mod state;
 mod theme;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_asset_loader::loading_state::{LoadingState, LoadingStateAppExt};
 use bevy_enhanced_input::EnhancedInputPlugin;
 #[cfg(feature = "dev_native")]
-use bevy_simple_subsecond_system::SimpleSubsecondPlugin;
+use bevy_simple_subsecond_system::{
+    SimpleSubsecondPlugin,
+    //hot_patched_app::HotPatchedAppExt
+};
 use iyes_progress::ProgressPlugin;
-use screens::{GameState, MenuScreen};
+
+use crate::state::GameState;
 
 fn main() -> AppExit {
     App::new().add_plugins(AppPlugin).run()
@@ -26,20 +32,6 @@ pub struct AppPlugin;
 
 impl Plugin for AppPlugin {
     fn build(&self, app: &mut App) {
-        // Order new `AppSystems` variants by adding them here:
-        app.configure_sets(
-            Update,
-            (
-                AppSystems::TickTimers,
-                AppSystems::RecordInput,
-                AppSystems::Update,
-            )
-                .chain(),
-        );
-
-        // Spawn the main camera.
-        app.add_systems(Startup, spawn_camera);
-
         // Add Bevy plugins.
         app.add_plugins((
             DefaultPlugins
@@ -67,16 +59,49 @@ impl Plugin for AppPlugin {
         ));
 
         app.init_state::<GameState>();
-        app.add_sub_state::<MenuScreen>();
         app.add_loading_state(LoadingState::new(GameState::Loading));
+
         // Add other plugins.
+        // #[cfg(not(feature = "dev_native"))]
         app.add_plugins((
             demo::plugin,
             #[cfg(feature = "dev")]
             dev_tools::plugin,
+            menu::plugin,
             screens::plugin,
+            state::plugin,
             theme::plugin,
         ));
+
+        // Hot patch other plugins in native dev builds.
+        // #[cfg(feature = "dev_native")]
+        // app.with_hot_patch(|app| {
+        //     app.add_plugins((
+        //         demo::plugin,
+        //         dev_tools::plugin,
+        //         menu::plugin,
+        //         screens::plugin,
+        //         state::plugin,
+        //         theme::plugin,
+        //     ));
+        // });
+
+        // Order new `AppSystems` variants by adding them here:
+        app.configure_sets(
+            Update,
+            (
+                AppSystems::TickTimers,
+                AppSystems::RecordInput,
+                AppSystems::Update,
+            )
+                .chain(),
+        );
+
+        app.init_state::<Pause>();
+        app.configure_sets(Update, PausableSystems.run_if(in_state(Pause(false))));
+
+        // Spawn the main camera.
+        app.add_systems(Startup, spawn_camera);
     }
 }
 
@@ -96,3 +121,9 @@ enum AppSystems {
 fn spawn_camera(mut commands: Commands) {
     commands.spawn((Name::new("Camera"), Camera2d));
 }
+
+#[derive(States, Clone, Copy, Debug, Eq, PartialEq, Hash, Default)]
+pub struct Pause(pub bool);
+
+#[derive(SystemSet, Copy, Clone, Eq, PartialEq, Hash, Debug)]
+pub struct PausableSystems;
