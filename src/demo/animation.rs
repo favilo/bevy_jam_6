@@ -5,12 +5,10 @@
 //! - [Timers](https://github.com/bevyengine/bevy/blob/latest/examples/time/timers.rs)
 
 use bevy::prelude::*;
-use rand::prelude::*;
 use std::time::Duration;
 
 use crate::{
     AppSystems, PausableSystems,
-    audio::sound_effect,
     demo::{movement::MovementController, player::PlayerAssets},
 };
 
@@ -21,11 +19,7 @@ pub(super) fn plugin(app: &mut App) {
         Update,
         (
             update_animation_timer.in_set(AppSystems::TickTimers),
-            (
-                update_animation_movement,
-                update_animation_atlas,
-                trigger_step_sound_effect,
-            )
+            (update_animation_movement, update_animation_atlas)
                 .chain()
                 .run_if(resource_exists::<PlayerAssets>)
                 .in_set(AppSystems::Update),
@@ -36,17 +30,14 @@ pub(super) fn plugin(app: &mut App) {
 
 /// Update the sprite direction and animation state (idling/walking).
 fn update_animation_movement(
-    mut player_query: Query<(&MovementController, &mut Sprite, &mut PlayerAnimation)>,
+    mut player_query: Query<(&MovementController, &mut PlayerAnimation, &mut Transform)>,
 ) {
-    for (controller, mut sprite, mut animation) in &mut player_query {
-        let dx = controller.intent.x;
-        if dx != 0.0 {
-            sprite.flip_x = dx < 0.0;
-        }
-
+    for (controller, mut animation, mut transform) in &mut player_query {
         let animation_state = if controller.intent == Vec2::ZERO {
             PlayerAnimationState::Idling
         } else {
+            let angle = Vec2::X.angle_to(controller.intent);
+            transform.rotation = Quat::from_rotation_z(angle);
             PlayerAnimationState::Walking
         };
         animation.update_state(animation_state);
@@ -72,25 +63,6 @@ fn update_animation_atlas(mut query: Query<(&PlayerAnimation, &mut Sprite)>) {
     }
 }
 
-/// If the player is moving, play a step sound effect synchronized with the
-/// animation.
-fn trigger_step_sound_effect(
-    mut commands: Commands,
-    player_assets: Res<PlayerAssets>,
-    mut step_query: Query<&PlayerAnimation>,
-) {
-    for animation in &mut step_query {
-        if animation.state == PlayerAnimationState::Walking
-            && animation.changed()
-            && (animation.frame == 2 || animation.frame == 5)
-        {
-            let rng = &mut rand::rng();
-            let random_step = player_assets.steps.choose(rng).unwrap().clone();
-            commands.spawn(sound_effect(random_step));
-        }
-    }
-}
-
 /// Component that tracks player's animation state.
 /// It is tightly bound to the texture atlas we use.
 #[derive(Component, Reflect)]
@@ -106,16 +78,15 @@ pub enum PlayerAnimationState {
     Idling,
     Walking,
 }
-
 impl PlayerAnimation {
     /// The number of idle frames.
-    const IDLE_FRAMES: usize = 2;
+    const IDLE_FRAMES: usize = 1;
     /// The duration of each idle frame.
     const IDLE_INTERVAL: Duration = Duration::from_millis(500);
     /// The number of walking frames.
-    const WALKING_FRAMES: usize = 6;
+    const WALKING_FRAMES: usize = 2;
     /// The duration of each walking frame.
-    const WALKING_INTERVAL: Duration = Duration::from_millis(50);
+    const WALKING_INTERVAL: Duration = Duration::from_millis(100);
 
     fn idling() -> Self {
         Self {
@@ -154,8 +125,12 @@ impl PlayerAnimation {
     pub fn update_state(&mut self, state: PlayerAnimationState) {
         if self.state != state {
             match state {
-                PlayerAnimationState::Idling => *self = Self::idling(),
-                PlayerAnimationState::Walking => *self = Self::walking(),
+                PlayerAnimationState::Idling => {
+                    *self = Self::idling();
+                }
+                PlayerAnimationState::Walking => {
+                    *self = Self::walking();
+                }
             }
         }
     }
@@ -169,7 +144,7 @@ impl PlayerAnimation {
     pub fn get_atlas_index(&self) -> usize {
         match self.state {
             PlayerAnimationState::Idling => self.frame,
-            PlayerAnimationState::Walking => 6 + self.frame,
+            PlayerAnimationState::Walking => self.frame,
         }
     }
 }

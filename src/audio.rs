@@ -19,7 +19,17 @@ pub fn music(handle: Handle<AudioSource>) -> impl Bundle {
 #[derive(Component, Default)]
 pub struct SoundEffect;
 
+/// A marker component for despawning the player move sound effect when it stops moving.
+#[allow(unused)]
+#[derive(Component, Default)]
+pub struct MoveSound;
+
 /// A sound effect audio instance.
 pub fn sound_effect(handle: Handle<AudioSource>) -> impl Bundle {
     (AudioPlayer(handle), PlaybackSettings::DESPAWN, SoundEffect)
+}
+
+#[allow(dead_code)]
+pub fn continuous_sound_effect(handle: Handle<AudioSource>) -> impl Bundle {
+    (AudioPlayer(handle), PlaybackSettings::LOOP, SoundEffect)
 }

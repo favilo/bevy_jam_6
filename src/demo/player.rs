@@ -8,6 +8,7 @@ use bevy_asset_loader::{
         config::{ConfigureLoadingState, LoadingStateConfig},
     },
 };
+use bevy_ecs_tilemap::{anchor::TilemapAnchor, map::TilemapType, tiles::TilePos};
 use bevy_enhanced_input::{
     events::Fired,
     prelude::{Actions, Binding, DeadZone, InputAction, InputContext, InputContextAppExt, Press},
@@ -18,6 +19,7 @@ use crate::{
     AppSystems, PausableSystems, Pause,
     demo::{
         animation::PlayerAnimation,
+        level::TilemapMetadata,
         movement::{MovementController, ScreenWrap},
     },
     menu::Menu,
@@ -49,25 +51,38 @@ pub fn player(
     max_speed: f32,
     player_assets: &PlayerAssets,
     texture_atlas_layouts: &mut Assets<TextureAtlasLayout>,
+    metadata: &TilemapMetadata,
 ) -> impl Bundle {
     // A texture atlas is a way to split a single image into a grid of related images.
     // You can learn more in this example: https://github.com/bevyengine/bevy/blob/latest/examples/2d/texture_atlas.rs
-    let layout = TextureAtlasLayout::from_grid(UVec2::splat(32), 6, 2, Some(UVec2::splat(1)), None);
+    const ROBOT_TILE_SIZE: UVec2 = UVec2::new(148, 154);
+
+    let layout = TextureAtlasLayout::from_grid(ROBOT_TILE_SIZE, 2, 1, Some(UVec2::splat(1)), None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
     let player_animation = PlayerAnimation::new();
 
+    let translation = (TilePos::new(0, 0).center_in_world(
+        &metadata.map_size,
+        &metadata.grid_size,
+        &metadata.tile_size,
+        &TilemapType::Square,
+        &TilemapAnchor::Center,
+    ) * metadata.scale_factor)
+        .extend(1.0);
+    let transform =
+        Transform::from_scale(Vec2::splat(0.33).extend(1.0)).with_translation(translation);
     (
         Name::new("Player"),
         Actions::<Player>::default(),
         Sprite {
-            image: player_assets.ducky.clone(),
+            image: player_assets.robot.clone(),
             texture_atlas: Some(TextureAtlas {
                 layout: texture_atlas_layout,
                 index: player_animation.get_atlas_index(),
             }),
             ..default()
         },
-        Transform::from_scale(Vec2::splat(8.0).extend(1.0)),
+        transform,
         MovementController {
             max_speed,
             ..default()
@@ -132,17 +147,18 @@ fn pause_game(
 #[derive(Resource, AssetCollection, Clone, Reflect)]
 #[reflect(Resource)]
 pub struct PlayerAssets {
-    #[asset(path = "images/ducky.png")]
+    #[asset(path = "images/robot_3Dblue-sheet.png")]
     #[asset(image(sampler(filter = nearest)))]
-    ducky: Handle<Image>,
-    #[asset(
-        paths(
-            "audio/sound_effects/step1.ogg",
-            "audio/sound_effects/step2.ogg",
-            "audio/sound_effects/step3.ogg",
-            "audio/sound_effects/step4.ogg"
-        ),
-        collection(typed)
-    )]
-    pub steps: Vec<Handle<AudioSource>>,
+    robot: Handle<Image>,
+    // #[asset(
+    //     paths(
+    //         "audio/sound_effects/kenney_scifi/spaceEngineLow_000.ogg",
+    //         "audio/sound_effects/kenney_scifi/spaceEngineLow_001.ogg",
+    //         "audio/sound_effects/kenney_scifi/spaceEngineLow_002.ogg",
+    //         "audio/sound_effects/kenney_scifi/spaceEngineLow_003.ogg",
+    //         "audio/sound_effects/kenney_scifi/spaceEngineLow_004.ogg",
+    //     ),
+    //     collection(typed)
+    // )]
+    // pub moving_sounds: Vec<Handle<AudioSource>>,
 }

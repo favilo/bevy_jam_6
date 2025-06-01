@@ -1099,6 +1099,7 @@ dependencies = [
  "bevy_asset_loader",
  "bevy_common_assets",
  "bevy_ecs_ldtk",
+ "bevy_ecs_tilemap",
  "bevy_enhanced_input",
  "bevy_simple_subsecond_system",
  "getrandom 0.3.3",

@@ -38,13 +38,16 @@ fn spawn_credits_screen(mut commands: Commands) {
 
 fn created_by() -> impl Bundle {
     grid(vec![
-        ["Joe Shmoe", "Implemented alligator wrestling AI"],
+        ["Favil Orbedios", "Programmed the game"],
         ["Jane Doe", "Made the music for the alien invasion"],
     ])
 }
 
 fn assets() -> impl Bundle {
     grid(vec![
+        ["Robot pack", "CC0 by kenney.nl"],
+        ["Pixel Platformer pack", "CC0 by kenney.nl"],
+        ["Abstract Platformer pack", "CC0 by kenney.nl"],
         ["Ducky sprite", "CC0 by Caz Creates Games"],
         ["Button SFX", "CC0 by Jaszunio15"],
         ["Music", "CC BY 3.0 by Kevin MacLeod"],
