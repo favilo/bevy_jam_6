@@ -11,12 +11,11 @@ use bevy_asset_loader::{
 use bevy_ecs_tilemap::{anchor::TilemapAnchor, map::TilemapType, tiles::TilePos};
 use bevy_enhanced_input::{
     events::Fired,
-    prelude::{Actions, Binding, DeadZone, InputAction, InputContext, InputContextAppExt, Press},
-    preset::{Axial, Cardinal},
+    prelude::{Actions, Binding, InputAction, InputContext, InputContextAppExt, Press},
 };
 
 use crate::{
-    AppSystems, PausableSystems, Pause,
+    Pause,
     game::{
         animation::PlayerAnimation,
         level::TilemapMetadata,
