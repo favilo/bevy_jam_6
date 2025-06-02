@@ -4,7 +4,7 @@
 #![cfg_attr(not(feature = "dev"), windows_subsystem = "windows")]
 
 mod audio;
-mod demo;
+mod game;
 #[cfg(feature = "dev")]
 mod dev_tools;
 mod menu;
@@ -66,7 +66,7 @@ impl Plugin for AppPlugin {
         // Add other plugins.
         // #[cfg(not(feature = "dev_native"))]
         app.add_plugins((
-            demo::plugin,
+            game::plugin,
             #[cfg(feature = "dev")]
             dev_tools::plugin,
             menu::plugin,

@@ -17,7 +17,7 @@ use bevy_enhanced_input::{
 
 use crate::{
     AppSystems, PausableSystems, Pause,
-    demo::{
+    game::{
         animation::PlayerAnimation,
         level::TilemapMetadata,
         movement::{MovementController, ScreenWrap},
@@ -38,12 +38,12 @@ pub(super) fn plugin(app: &mut App) {
     // Record directional input as movement controls.
     app.add_observer(player_binding);
     app.add_observer(pause_game);
-    app.add_systems(
-        Update,
-        record_player_directional_input
-            .in_set(AppSystems::RecordInput)
-            .in_set(PausableSystems),
-    );
+    // app.add_systems(
+    //     Update,
+    //     record_player_directional_input
+    //         .in_set(AppSystems::RecordInput)
+    //         .in_set(PausableSystems),
+    // );
 }
 
 /// The player character.
@@ -111,28 +111,29 @@ fn player_binding(trigger: Trigger<Binding<Player>>, mut actions: Query<&mut Act
         .to((KeyCode::Escape, GamepadButton::Start))
         .with_conditions(Press::new(0.2));
 
-    actions
-        .bind::<Move>()
-        .to((
-            Cardinal::wasd_keys(),
-            Cardinal::arrow_keys(),
-            Axial::left_stick(),
-        ))
-        .with_modifiers(DeadZone::default());
+    // Disable controls, use program
+    // actions
+    //     .bind::<Move>()
+    //     .to((
+    //         Cardinal::wasd_keys(),
+    //         Cardinal::arrow_keys(),
+    //         Axial::left_stick(),
+    //     ))
+    //     .with_modifiers(DeadZone::default());
 }
 
-fn record_player_directional_input(
-    mut controller_query: Query<(&mut MovementController, &Actions<Player>)>,
-) {
-    for (mut controller, actions) in &mut controller_query {
-        // Collect directional input from the Move action.
-        let intent = actions.value::<Move>().unwrap().as_axis2d();
+// fn record_player_directional_input(
+//     mut controller_query: Query<(&mut MovementController, &Actions<Player>)>,
+// ) {
+//     for (mut controller, actions) in &mut controller_query {
+//         // Collect directional input from the Move action.
+//         let intent = actions.value::<Move>().unwrap().as_axis2d();
 
-        // Normalize intent so that diagonal movement is the same speed as horizontal / vertical.
-        // This should be omitted if the input comes from an analog stick instead.
-        controller.intent = intent.normalize_or_zero();
-    }
-}
+//         // Normalize intent so that diagonal movement is the same speed as horizontal / vertical.
+//         // This should be omitted if the input comes from an analog stick instead.
+//         controller.intent = intent.normalize_or_zero();
+//     }
+// }
 
 fn pause_game(
     _: Trigger<Fired<PauseGame>>,
@@ -147,7 +148,7 @@ fn pause_game(
 #[derive(Resource, AssetCollection, Clone, Reflect)]
 #[reflect(Resource)]
 pub struct PlayerAssets {
-    #[asset(path = "images/robot_3Dblue-sheet.png")]
+    #[asset(path = "images/sprites/robot_3Dblue-sheet.png")]
     #[asset(image(sampler(filter = nearest)))]
     robot: Handle<Image>,
     // #[asset(

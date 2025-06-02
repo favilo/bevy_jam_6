@@ -9,7 +9,7 @@ use std::time::Duration;
 
 use crate::{
     AppSystems, PausableSystems,
-    demo::{movement::MovementController, player::PlayerAssets},
+    game::{movement::MovementController, player::PlayerAssets},
 };
 
 pub(super) fn plugin(app: &mut App) {

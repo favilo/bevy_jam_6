@@ -18,7 +18,7 @@ use bevy_ecs_tilemap::{
 
 use crate::{
     audio::music,
-    demo::player::{PlayerAssets, player},
+    game::player::{PlayerAssets, player},
     state::GameState,
 };
 
@@ -37,7 +37,7 @@ pub struct LevelAssets {
     #[asset(path = "audio/music/Fluffing A Duck.ogg")]
     music: Handle<AudioSource>,
 
-    #[asset(path = "images/kenney/platformer_pack/Tilemap/marble_packed.png")]
+    #[asset(path = "images/tiles/marble_packed.png")]
     #[asset(image(sampler(filter = nearest)))]
     pub tiles: Handle<Image>,
 }
