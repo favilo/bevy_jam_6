@@ -4,9 +4,9 @@
 #![cfg_attr(not(feature = "dev"), windows_subsystem = "windows")]
 
 mod audio;
-mod game;
 #[cfg(feature = "dev")]
 mod dev_tools;
+mod game;
 mod menu;
 mod screens;
 mod state;
