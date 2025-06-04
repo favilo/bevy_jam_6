@@ -9,12 +9,14 @@ mod animation;
 pub mod level;
 mod movement;
 pub mod player;
+pub mod objects;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins((
         animation::plugin,
         level::plugin,
         movement::plugin,
+        objects::plugin,
         player::plugin,
     ));
 }

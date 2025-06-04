@@ -14,13 +14,9 @@ mod theme;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_asset_loader::loading_state::{LoadingState, LoadingStateAppExt};
+use bevy_ecs_ldtk::LdtkPlugin;
 use bevy_ecs_tilemap::TilemapPlugin;
 use bevy_enhanced_input::EnhancedInputPlugin;
-#[cfg(feature = "dev_native")]
-use bevy_simple_subsecond_system::{
-    SimpleSubsecondPlugin,
-    //hot_patched_app::HotPatchedAppExt
-};
 use iyes_progress::ProgressPlugin;
 
 use crate::state::GameState;
@@ -37,7 +33,7 @@ impl Plugin for AppPlugin {
         app.add_plugins((
             DefaultPlugins
                 .set(AssetPlugin {
-                    // Wasm builds will check for meta files (that don't exist) if this isn't set.
+                    // WASM builds will check for meta files (that don't exist) if this isn't set.
                     // This causes errors and even panics on web build on itch.
                     // See https://github.com/bevyengine/bevy_github_ci_template/issues/48.
                     meta_check: AssetMetaCheck::Never,
@@ -55,9 +51,8 @@ impl Plugin for AppPlugin {
             EnhancedInputPlugin,
             ProgressPlugin::<GameState>::new()
                 .with_state_transition(GameState::Loading, GameState::Menu),
-            #[cfg(feature = "dev_native")]
-            SimpleSubsecondPlugin::default(),
             TilemapPlugin,
+            LdtkPlugin,
         ));
 
         app.init_state::<GameState>();
@@ -120,8 +115,20 @@ enum AppSystems {
     Update,
 }
 
+#[derive(Component, Debug, Clone, Copy, Reflect)]
+pub struct UiCamera;
+
 fn spawn_camera(mut commands: Commands) {
-    commands.spawn((Name::new("Camera"), Camera2d));
+    commands.spawn((
+        Name::new("Main Camera"),
+        Camera2d,
+        UiCamera,
+        // Projection::Orthographic(OrthographicProjection {
+        //     scale: 0.35,
+        //     ..OrthographicProjection::default_2d()
+        // }),
+        Transform::from_xyz(10_000.0, 10_000.0, 10_000.0),
+    ));
 }
 
 #[derive(States, Clone, Copy, Debug, Eq, PartialEq, Hash, Default)]

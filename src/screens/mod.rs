@@ -21,6 +21,7 @@ pub(super) fn plugin(app: &mut App) {
     app.add_plugins((gameplay::plugin, splash::plugin, title::plugin));
 
     app.add_systems(OnEnter(GameState::Menu), spawn_menu_context);
+
 }
 
 #[derive(InputContext, Default, Debug, Reflect)]

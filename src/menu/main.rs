@@ -2,14 +2,15 @@
 
 use bevy::prelude::*;
 
-use crate::{menu::Menu, state::GameState, theme::widget};
+use crate::{UiCamera, menu::Menu, state::GameState, theme::widget};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Menu::Main), spawn_main_menu);
 }
 
-fn spawn_main_menu(mut commands: Commands) {
+fn spawn_main_menu(mut commands: Commands, camera: Single<Entity, With<UiCamera>>) {
     commands.spawn((
+        UiTargetCamera(*camera),
         widget::ui_root("Main Menu"),
         GlobalZIndex(2),
         StateScoped(Menu::Main),

@@ -2,8 +2,4 @@
 
 use bevy::prelude::*;
 
-use crate::{game::level::spawn_level, state::GameState};
-
-pub(super) fn plugin(app: &mut App) {
-    app.add_systems(OnEnter(GameState::Playing), spawn_level);
-}
+pub(super) fn plugin(_app: &mut App) {}

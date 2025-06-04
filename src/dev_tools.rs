@@ -4,11 +4,14 @@ use bevy::{
     dev_tools::states::log_transitions, diagnostic::FrameTimeDiagnosticsPlugin, prelude::*,
     ui::UiDebugOptions,
 };
+use bevy_console::{ConsoleConfiguration, ConsolePlugin};
 use bevy_enhanced_input::{
     events::Fired,
     prelude::{Actions, Binding, InputAction, InputContext, InputContextAppExt, Press},
 };
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
+#[cfg(feature = "dev_native")]
+use bevy_simple_subsecond_system::SimpleSubsecondPlugin;
 
 use crate::{Pause, menu::Menu, state::GameState};
 
@@ -19,11 +22,16 @@ pub(super) fn plugin(app: &mut App) {
     app.add_input_context::<DebugContext>();
     app.add_plugins((
         EguiPlugin {
-            enable_multipass_for_primary_context: false,
+            enable_multipass_for_primary_context: true,
         },
+        #[cfg(feature = "dev_native")]
+        SimpleSubsecondPlugin::default(),
         WorldInspectorPlugin::default().run_if(|options: Res<UiDebugOptions>| options.enabled),
         FrameTimeDiagnosticsPlugin::default(),
+        ConsolePlugin,
     ));
+
+    app.insert_resource(ConsoleConfiguration { ..default() });
     // Log `Screen` state transitions.
     app.add_systems(Update, log_transitions::<GameState>);
     app.add_systems(Update, log_transitions::<Menu>);
