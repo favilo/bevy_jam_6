@@ -6,17 +6,21 @@
 use bevy::prelude::*;
 
 mod animation;
+pub mod cpu;
 pub mod level;
 mod movement;
 pub mod objects;
 pub mod player;
+pub mod ticks;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins((
         animation::plugin,
+        cpu::plugin,
         level::plugin,
         movement::plugin,
         objects::plugin,
         player::plugin,
+        ticks::plugin,
     ));
 }

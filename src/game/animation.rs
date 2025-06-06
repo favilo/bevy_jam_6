@@ -7,10 +7,7 @@
 use bevy::prelude::*;
 use std::time::Duration;
 
-use crate::{
-    AppSystems, PausableSystems,
-    game::{movement::MovementController, player::PlayerAssets},
-};
+use crate::{AppSystems, PausableSystems, game::movement::MovementController};
 
 pub(super) fn plugin(app: &mut App) {
     // Animate and play sound effects based on controls.
@@ -21,7 +18,6 @@ pub(super) fn plugin(app: &mut App) {
             update_animation_timer.in_set(AppSystems::TickTimers),
             (update_animation_movement, update_animation_atlas)
                 .chain()
-                .run_if(resource_exists::<PlayerAssets>)
                 .in_set(AppSystems::Update),
         )
             .in_set(PausableSystems),

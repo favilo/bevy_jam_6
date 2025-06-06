@@ -99,7 +99,11 @@ where
     )
 }
 
-pub fn button_medium<E, B, M, I>(text: impl Into<String>, action: I) -> impl Bundle
+pub fn button_medium<E, B, M, I>(
+    text: impl Into<String>,
+    action: I,
+    extra: impl Bundle,
+) -> impl Bundle
 where
     E: Event,
     B: Bundle,
@@ -117,6 +121,7 @@ where
                 ..default()
             },
             BorderRadius::all(Val::Px(10.0)),
+            extra,
         ),
         TextFont::from_font_size(16.0),
     )
@@ -150,6 +155,7 @@ where
                         none: BUTTON_BACKGROUND,
                         hovered: BUTTON_HOVERED_BACKGROUND,
                         pressed: BUTTON_PRESSED_BACKGROUND,
+                        inactive: BUTTON_DISABLED_BACKGROUND,
                     },
                     children![(
                         Name::new("Button Text"),

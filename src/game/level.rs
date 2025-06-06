@@ -1,5 +1,7 @@
 //! Spawn the main level.
 
+use std::{fmt::Debug, time::Duration};
+
 use bevy::{
     asset::RenderAssetUsages,
     color::palettes::css::*,
@@ -26,13 +28,16 @@ use bevy_simple_subsecond_system::hot;
 use crate::{
     Pause, UiCamera,
     audio::music,
-    game::{objects::GemBundle, player::PlayerBundle},
+    game::{
+        cpu::{CpuOptions, CpuSpeedDisplay, Instruction, ProgramCode},
+        objects::{GemBundle, GemDisplay, TimeToBomb, TimeToBombDisplay},
+        player::PlayerBundle,
+        ticks::{reset_simulation, start_simulation},
+    },
     menu::Menu,
-    state::GameState,
-    theme::widget,
+    state::{GameState, ProgramState},
+    theme::{interaction::Inactive, widget},
 };
-
-use super::objects::{GemDisplay, TimeToBombDisplay};
 
 #[allow(dead_code)]
 pub const LEVEL_SCALE_FACTOR: f32 = 4.0;
@@ -42,7 +47,8 @@ pub(super) fn plugin(app: &mut App) {
     app.configure_loading_state(
         LoadingStateConfig::new(GameState::Loading).load_collection::<LevelAssets>(),
     );
-    app.add_systems(OnEnter(GameState::Playing), (spawn_level, spawn_level_ui));
+    app.add_systems(OnEnter(GameState::Playing), spawn_level_ui);
+    app.add_systems(OnEnter(ProgramState::Buying), spawn_level);
     app.register_ldtk_entity::<PlayerBundle>("Player");
     app.register_ldtk_entity::<GemBundle>("Blue_gear");
     app.add_input_context::<LevelContext>();
@@ -72,8 +78,15 @@ pub struct TilemapMetadata {
     pub scale_factor: f32,
 }
 
+#[derive(Component, Reflect, Debug, Clone, Copy)]
+pub struct ResetButton;
+
+#[derive(Component, Reflect, Debug, Clone, Copy)]
+pub struct RunButton;
+
 fn control_panel() -> impl Bundle {
     (
+        Name::new("Control Panel"),
         Node {
             flex_direction: FlexDirection::Row,
             align_items: AlignItems::Center,
@@ -87,12 +100,8 @@ fn control_panel() -> impl Bundle {
         Pickable::IGNORE,
         children![
             // Controls
-            widget::button_medium("Reset", |_: Trigger<Pointer<Click>>| {
-                tracing::info!("Resetting level");
-            }),
-            widget::button_medium("Run", |_: Trigger<Pointer<Click>>| {
-                tracing::info!("Running level");
-            }),
+            widget::button_medium("Reset", reset_simulation, (Inactive, ResetButton)),
+            widget::button_medium("Run", start_simulation, RunButton),
         ],
     )
 }
@@ -167,6 +176,7 @@ pub struct UiRoot;
 #[cfg_attr(feature = "dev_native", hot(rerun_on_hot_patch = true))]
 pub fn spawn_level_ui(
     mut commands: Commands,
+    level_assets: Res<LevelAssets>,
     camera: Single<Entity, With<UiCamera>>,
     old_ui: Query<Entity, With<UiRoot>>,
     mut images: ResMut<Assets<Image>>,
@@ -182,36 +192,52 @@ pub fn spawn_level_ui(
         UiRoot,
         StateScoped(GameState::Playing),
         GlobalZIndex(2),
-        children![widget::ui_grid(
-            // Grid columns
-            vec![
-                GridTrack::flex(1.0),
-                GridTrack::flex(1.0),
-                GridTrack::min_content(),
-            ],
-            // Grid rows
-            vec![
-                GridTrack::min_content(),
-                GridTrack::min_content(),
-                GridTrack::flex(2.0),
-            ],
-            // Children
+        children![
+            music(level_assets.music.clone()),
             (
-                BackgroundColor(DARK_GREY.into()),
-                children![
-                    // First row
-                    stats_panel(),
-                    upgrade_panel(),
-                    level_viewport(camera_image), // 2 columns
-                    // Second row
-                    commands_panel(),
-                    control_panel(),
-                    // Third row
-                    program_panel(),
-                ],
+                Name::new("UI Grid"),
+                widget::ui_grid(
+                    // Grid columns
+                    vec![
+                        GridTrack::flex(1.0),
+                        GridTrack::flex(1.0),
+                        GridTrack::min_content(),
+                    ],
+                    // Grid rows
+                    vec![
+                        GridTrack::min_content(),
+                        GridTrack::min_content(),
+                        GridTrack::flex(2.0),
+                    ],
+                    // Children
+                    (
+                        BackgroundColor(DARK_GREY.into()),
+                        children![
+                            // First row
+                            stats_panel(),
+                            upgrade_panel(),
+                            level_viewport(camera_image), // 2 columns
+                            // Second row
+                            commands_panel(),
+                            control_panel(),
+                            // Third row
+                            program_panel(),
+                        ],
+                    )
+                )
             )
-        )],
+        ],
     ));
+    commands.insert_resource(TimeToBomb {
+        duration: Duration::from_millis(200),
+    });
+    commands.insert_resource(CpuOptions {
+        cpu_tick: Duration::from_millis(100),
+        multiplier: 1.0,
+    });
+    commands.insert_resource(ProgramCode {
+        code: vec![Instruction::MoveForward],
+    });
 }
 
 fn upgrade_panel() -> impl Bundle {
@@ -307,8 +333,13 @@ fn stats_panel() -> impl Bundle {
         Pickable::IGNORE,
         children![
             // Stats
-            stat_display::<GemDisplay>("Gears", ROYAL_BLUE.into()),
-            stat_display::<TimeToBombDisplay>("Remaining", ORANGE_RED.into()),
+            stat_display::<GemDisplay>("Gears", 0, ROYAL_BLUE.into()),
+            stat_display::<TimeToBombDisplay>(
+                "Time to boom",
+                Duration::default(),
+                ORANGE_RED.into()
+            ),
+            stat_display::<CpuSpeedDisplay>("CPU Inst", Duration::default(), DARK_GREEN.into(),),
         ],
     )
 }
@@ -344,7 +375,11 @@ fn program_panel() -> impl Bundle {
     )
 }
 
-fn stat_display<Comp: Component + Default>(label: impl Into<String>, color: Color) -> impl Bundle {
+fn stat_display<Comp: Component + Default>(
+    label: impl Into<String>,
+    default_value: impl Debug,
+    color: Color,
+) -> impl Bundle {
     let label = label.into();
     (
         Name::new(format!("{label} Row")),
@@ -358,7 +393,10 @@ fn stat_display<Comp: Component + Default>(label: impl Into<String>, color: Colo
         Pickable::IGNORE,
         children![
             widget::label(format!("{label}:")),
-            (widget::colored_label("0", color), Comp::default(),),
+            (
+                widget::colored_label(format!("{default_value:?}"), color),
+                Comp::default(),
+            ),
         ],
     )
 }
@@ -384,10 +422,7 @@ pub fn spawn_level(
             ..default()
         },
         StateScoped(GameState::Playing),
-        children![(
-            Name::new("Gameplay Music"),
-            music(level_assets.music.clone())
-        ),],
+        children![(Name::new("Gameplay Music"),),],
         Actions::<LevelContext>::default(),
     ));
     commands.insert_resource(LevelSelection::index(0));

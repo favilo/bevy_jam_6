@@ -13,7 +13,11 @@ use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
 #[cfg(feature = "dev_native")]
 use bevy_simple_subsecond_system::SimpleSubsecondPlugin;
 
-use crate::{Pause, menu::Menu, state::GameState};
+use crate::{
+    Pause,
+    menu::Menu,
+    state::{GameState, ProgramState},
+};
 
 #[derive(InputContext, Reflect, Debug, Default)]
 pub struct DebugContext;
@@ -33,9 +37,15 @@ pub(super) fn plugin(app: &mut App) {
 
     app.insert_resource(ConsoleConfiguration { ..default() });
     // Log `Screen` state transitions.
-    app.add_systems(Update, log_transitions::<GameState>);
-    app.add_systems(Update, log_transitions::<Menu>);
-    app.add_systems(Update, log_transitions::<Pause>);
+    app.add_systems(
+        Update,
+        (
+            log_transitions::<GameState>,
+            log_transitions::<Menu>,
+            log_transitions::<Pause>,
+            log_transitions::<ProgramState>,
+        ),
+    );
 
     app.add_systems(Startup, |mut commands: Commands| {
         commands.spawn((
