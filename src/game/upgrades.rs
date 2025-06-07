@@ -83,6 +83,7 @@ impl Upgrade {
         Self::new(UpgradeType::CpuSpeed, level, cost)
     }
 
+    #[allow(dead_code)]
     fn cpu_multiplier(level: u32, cost: usize) -> Self {
         Self::new(UpgradeType::CpuMultiplier, level, cost)
     }
