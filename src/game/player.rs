@@ -3,9 +3,16 @@
 use bevy::prelude::*;
 use bevy_ecs_ldtk::{GridCoords, LdtkEntity};
 
+use crate::state::GameState;
+
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<PlayerObject>()
         .init_resource::<Wallet>();
+    app.add_systems(OnEnter(GameState::Playing), setup_wallet);
+}
+
+fn setup_wallet(mut commands: Commands) {
+    commands.init_resource::<Wallet>();
 }
 
 #[derive(Resource, Reflect, Debug, Default, Clone)]

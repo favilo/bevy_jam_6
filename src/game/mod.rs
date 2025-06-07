@@ -12,6 +12,7 @@ mod movement;
 pub mod objects;
 pub mod player;
 pub mod ticks;
+pub mod upgrades;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins((
@@ -22,5 +23,6 @@ pub(super) fn plugin(app: &mut App) {
         objects::plugin,
         player::plugin,
         ticks::plugin,
+        upgrades::plugin,
     ));
 }

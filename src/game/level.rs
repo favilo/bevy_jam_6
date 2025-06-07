@@ -29,7 +29,7 @@ use crate::{
     Pause, UiCamera,
     audio::music,
     game::{
-        cpu::{CpuOptions, CpuSpeedDisplay, Instruction, ProgramCode},
+        cpu::{CpuOptions, CpuSpeedDisplay},
         objects::{GemBundle, GemDisplay, TimeToBomb, TimeToBombDisplay},
         player::PlayerBundle,
         ticks::{reset_simulation, start_simulation},
@@ -235,9 +235,6 @@ pub fn spawn_level_ui(
         cpu_tick: Duration::from_millis(100),
         multiplier: 1.0,
     });
-    commands.insert_resource(ProgramCode {
-        code: vec![Instruction::MoveForward],
-    });
 }
 
 fn upgrade_panel() -> impl Bundle {
@@ -245,8 +242,8 @@ fn upgrade_panel() -> impl Bundle {
         Name::new("Upgrade Panel"),
         Node {
             flex_direction: FlexDirection::Column,
-            align_content: AlignContent::Start,
-            align_items: AlignItems::Start,
+            align_content: AlignContent::Stretch,
+            align_items: AlignItems::Stretch,
             justify_items: JustifyItems::Start,
             justify_content: JustifyContent::Start,
             width: Val::Percent(100.0),
@@ -271,9 +268,35 @@ fn upgrade_panel() -> impl Bundle {
         children![
             // Upgrades
             widget::label("Upgrades"),
+            (
+                Name::new("Command Buttons List"),
+                Node {
+                    flex_direction: FlexDirection::Column,
+                    align_content: AlignContent::Stretch,
+                    align_items: AlignItems::Stretch,
+                    justify_items: JustifyItems::Start,
+                    justify_content: JustifyContent::Start,
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(100.0),
+                    // padding: UiRect::all(Val::Px(5.0)),
+                    ..default()
+                },
+                BorderRadius::all(Val::Px(5.0)),
+                Pickable::IGNORE,
+                UpgradeParent,
+                children![],
+            )
         ],
     )
 }
+
+#[derive(Component, Reflect, Debug, Clone, Copy)]
+#[reflect(Component)]
+pub struct UpgradeParent;
+
+#[derive(Component, Reflect, Debug, Clone, Copy)]
+#[reflect(Component)]
+pub struct CommandParent;
 
 fn commands_panel() -> impl Bundle {
     (
@@ -302,6 +325,22 @@ fn commands_panel() -> impl Bundle {
         children![
             // Commands
             widget::label("Commands"),
+            (
+                Name::new("Command Palette"),
+                Node {
+                    flex_direction: FlexDirection::Column,
+                    align_items: AlignItems::Start,
+                    justify_content: JustifyContent::Start,
+                    justify_items: JustifyItems::Start,
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(100.0),
+                    ..default()
+                },
+                BorderRadius::all(Val::Px(5.0)),
+                Pickable::IGNORE,
+                CommandParent,
+                children![],
+            )
         ],
     )
 }
@@ -344,6 +383,9 @@ fn stats_panel() -> impl Bundle {
     )
 }
 
+#[derive(Component, Reflect, Debug, Clone, Copy)]
+pub struct ProgramParent;
+
 fn program_panel() -> impl Bundle {
     (
         Name::new("Program Panel"),
@@ -371,6 +413,26 @@ fn program_panel() -> impl Bundle {
         children![
             // Program
             widget::label("Program"),
+            (
+                Name::new("Program List"),
+                Node {
+                    // flex_direction: FlexDirection::Column,
+                    display: Display::Grid,
+                    align_items: AlignItems::Start,
+                    justify_content: JustifyContent::Start,
+                    justify_items: JustifyItems::Start,
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(100.0),
+                    grid_template_columns: vec![GridTrack::min_content(), GridTrack::flex(1.0)],
+                    grid_auto_rows: vec![GridTrack::min_content()],
+                    // padding: UiRect::all(Val::Px(5.0)),
+                    ..default()
+                },
+                BorderRadius::all(Val::Px(5.0)),
+                Pickable::IGNORE,
+                ProgramParent,
+                children![],
+            )
         ],
     )
 }

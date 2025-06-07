@@ -75,6 +75,8 @@ where
             BorderRadius::MAX,
         ),
         TextFont::from_font_size(40.0),
+        None,
+        None::<()>,
     )
 }
 
@@ -96,6 +98,8 @@ where
             ..default()
         },
         TextFont::from_font_size(40.0),
+        None,
+        None::<()>,
     )
 }
 
@@ -124,6 +128,51 @@ where
             extra,
         ),
         TextFont::from_font_size(16.0),
+        None,
+        None::<()>,
+    )
+}
+
+pub fn button_upgrade<E, B, M, I>(
+    text: impl Into<String>,
+    cost: usize,
+    action: I,
+    extra: impl Bundle,
+) -> impl Bundle
+where
+    E: Event,
+    B: Bundle,
+    I: IntoObserverSystem<E, B, M>,
+{
+    let font = TextFont::from_font_size(20.0);
+    let font2 = font.clone();
+    let cost = format!("Cost: {cost}");
+    button_base(
+        text,
+        action,
+        (
+            Node {
+                flex_direction: FlexDirection::Row,
+                width: Val::Percent(100.0),
+                height: Val::Px(70.0),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::SpaceBetween,
+                padding: UiRect::horizontal(Val::Px(10.0)),
+                ..default()
+            },
+            BorderRadius::all(Val::Px(3.0)),
+            extra,
+        ),
+        font,
+        Some(MEDIUM_BLUE.into()),
+        Some((
+            Name::new("Upgrade Cost"),
+            Text::new(cost),
+            font2.clone(),
+            TextColor(BUTTON_TEXT),
+            // Don't bubble picking events from the text up to the button.
+            Pickable::IGNORE,
+        )),
     )
 }
 
@@ -134,6 +183,8 @@ fn button_base<E, B, M, I>(
     action: I,
     button_bundle: impl Bundle,
     font: TextFont,
+    background_color: Option<Color>,
+    extra_child: Option<impl Bundle + Clone>,
 ) -> impl Bundle
 where
     E: Event,
@@ -145,26 +196,31 @@ where
     (
         Name::new(format!(r#"Button("{text}")"#)),
         Node::default(),
-        Children::spawn(SpawnWith(|parent: &mut ChildSpawner| {
+        Children::spawn(SpawnWith(move |parent: &mut ChildSpawner| {
             parent
                 .spawn((
                     Name::new("Button Inner"),
                     Button,
-                    BackgroundColor(BUTTON_BACKGROUND),
+                    BackgroundColor(background_color.unwrap_or(BUTTON_BACKGROUND)),
                     InteractionPalette {
-                        none: BUTTON_BACKGROUND,
+                        none: background_color.unwrap_or(BUTTON_BACKGROUND),
                         hovered: BUTTON_HOVERED_BACKGROUND,
                         pressed: BUTTON_PRESSED_BACKGROUND,
                         inactive: BUTTON_DISABLED_BACKGROUND,
                     },
-                    children![(
-                        Name::new("Button Text"),
-                        Text(text),
-                        font,
-                        TextColor(BUTTON_TEXT),
-                        // Don't bubble picking events from the text up to the button.
-                        Pickable::IGNORE,
-                    )],
+                    Children::spawn(SpawnWith(move |parent: &mut ChildSpawner| {
+                        parent.spawn((
+                            Name::new("Button Text"),
+                            Text(text),
+                            font,
+                            TextColor(BUTTON_TEXT),
+                            // Don't bubble picking events from the text up to the button.
+                            Pickable::IGNORE,
+                        ));
+                        if let Some(extra) = &extra_child {
+                            parent.spawn(extra.clone());
+                        }
+                    })),
                 ))
                 .insert(button_bundle)
                 .observe(action);

@@ -1,5 +1,8 @@
 use bevy::prelude::*;
 
+#[cfg(feature = "dev_native")]
+use bevy_simple_subsecond_system::hot;
+
 use crate::{state::ProgramState, theme::interaction::Inactive};
 
 use super::{
@@ -29,6 +32,7 @@ fn enter_buying(
     commands.entity(reset_button).insert(Inactive);
 }
 
+#[cfg_attr(feature = "dev_native", hot)]
 fn begin_running_program(
     mut commands: Commands,
     cpu_options: Res<CpuOptions>,
@@ -36,6 +40,7 @@ fn begin_running_program(
     run_button: Query<Entity, With<RunButton>>,
     reset_button: Query<Entity, With<ResetButton>>,
 ) {
+    tracing::info!("Starting the program with CPU options: {:?}", cpu_options);
     commands.insert_resource(TickTimer {
         timer: Timer::new(
             cpu_options.cpu_tick.mul_f32(cpu_options.multiplier),
