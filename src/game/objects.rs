@@ -1,7 +1,10 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
-use bevy_ecs_ldtk::{GridCoords, LdtkEntity};
+use bevy_ecs_ldtk::{GridCoords, LdtkEntity, LevelSelection, assets::LevelIndices};
+
+#[cfg(feature = "dev_native")]
+use bevy_simple_subsecond_system::hot;
 
 use crate::state::ProgramState;
 
@@ -82,11 +85,14 @@ fn bomb_exploded(_: Trigger<BombExploded>, mut next_state: ResMut<NextState<Prog
     next_state.set(ProgramState::Buying);
 }
 
+#[cfg_attr(feature = "dev_native", hot)]
 fn pickup_gem(
     mut commands: Commands,
     players: Query<&GridCoords, With<PlayerObject>>,
     gems: Query<(Entity, &GridCoords), With<GemObject>>,
     mut wallet: ResMut<Wallet>,
+    mut next_state: ResMut<NextState<ProgramState>>,
+    mut level_selection: ResMut<LevelSelection>,
 ) {
     let player_coords = players.single().unwrap();
     for (gem_entity, gem_coords) in &gems {
@@ -96,5 +102,19 @@ fn pickup_gem(
             tracing::info!("Player picked up a gem at {:?}", gem_coords);
             // Here you could also add logic to increase the player's score or inventory.
         }
+    }
+
+    if gems.iter().len() == 1 {
+        tracing::info!("All gems collected!");
+        next_state.set(ProgramState::Buying);
+        let LevelSelection::Indices(LevelIndices { level, .. }) = *level_selection else {
+            tracing::warn!(
+                "Expected LevelSelection::Indices, got {:?}",
+                level_selection
+            );
+            return;
+        };
+        tracing::info!("Switching to next level: {}", level + 1);
+        *level_selection = LevelSelection::index(level + 1);
     }
 }

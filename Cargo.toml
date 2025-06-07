@@ -27,6 +27,8 @@ bevy_ecs_ldtk = "0.12.0"
 bevy_ecs_tilemap = { version = "0.16.0", features = ["atlas"] }
 bevy_console = "0.14.0"
 petgraph = { version = "0.7.1", features = ["rayon", "serde-1"] }
+multimap = "0.10.1"
+itertools = "0.14.0"
 
 # Your web builds will start failing if you add a dependency that pulls in `getrandom` v0.3+.
 # To fix this, you should tell `getrandom` to use the `wasm_js` backend on Wasm.

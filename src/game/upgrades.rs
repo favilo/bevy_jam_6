@@ -12,7 +12,10 @@ use crate::{
     theme::{interaction::Inactive, widget},
 };
 
-use super::{cpu::ProgramCode, player::Wallet};
+use super::{
+    cpu::{Instruction, ProgramCode, UnlockedInstructions},
+    player::Wallet,
+};
 
 pub(crate) fn plugin(app: &mut App) {
     app.add_event::<UpgradeBought>();
@@ -26,10 +29,9 @@ pub(crate) fn plugin(app: &mut App) {
     )
     .add_systems(
         FixedUpdate,
-        (
-            // update_upgrade_buttons.run_if(resource_exists_and_changed::<UpgradeTree>),
-            activate_upgrade_buttons.run_if(resource_exists_and_changed::<Wallet>),
-        ),
+        activate_upgrade_buttons
+            .run_if(resource_exists_and_changed::<Wallet>)
+            .run_if(in_state(GameState::Playing)),
     );
     app.add_observer(apply_upgrade);
 }
@@ -55,7 +57,7 @@ impl std::fmt::Display for UpgradeType {
         match self {
             UpgradeType::CpuSpeed => write!(f, "CPU Speed x2"),
             UpgradeType::CpuMultiplier => write!(f, "CPU Multiplier x2"),
-            UpgradeType::MaxInstructions => write!(f, "Max Instructions +1"),
+            UpgradeType::MaxInstructions => write!(f, "Max Instructions x2"),
             UpgradeType::UnlockIf => write!(f, "Unlock If"),
         }
     }
@@ -110,17 +112,29 @@ pub struct UpgradeTree {
 impl Default for UpgradeTree {
     fn default() -> Self {
         let mut deps = petgraph::Graph::new();
-        let max_insts1 = deps.add_node(Upgrade::max_instructions(1, 10));
-        let cpu_speed1 = deps.add_node(Upgrade::cpu_speed(1, 10));
-        let cpu_speed2 = deps.add_node(Upgrade::cpu_speed(2, 20));
-        let cpu_multiplier1 = deps.add_node(Upgrade::cpu_multiplier(1, 20));
-        deps.add_edge(max_insts1, cpu_speed1, ());
-        deps.add_edge(cpu_speed1, cpu_multiplier1, ());
-        deps.add_edge(cpu_speed1, cpu_speed2, ());
+        let max_insts = (1_u32..=4)
+            .map(|i| Upgrade::max_instructions(i, 10 * 2_usize.pow(i) - 10))
+            .map(|u| deps.add_node(u))
+            .collect::<Vec<_>>();
+        let cpu_speeds = (1_u32..=5)
+            .map(|i| Upgrade::cpu_speed(i, 10 * 3_usize.pow(i)))
+            .map(|u| deps.add_node(u))
+            .collect::<Vec<_>>();
+        let unlock_if = deps.add_node(Upgrade::new(UpgradeType::UnlockIf, 1, 100));
+
+        deps.add_edge(max_insts[0], cpu_speeds[0], ());
+        deps.add_edge(cpu_speeds[0], cpu_speeds[1], ());
+        deps.add_edge(cpu_speeds[0], max_insts[1], ());
+        deps.add_edge(cpu_speeds[1], cpu_speeds[2], ());
+        deps.add_edge(cpu_speeds[1], max_insts[2], ());
+        deps.add_edge(cpu_speeds[1], unlock_if, ());
+        deps.add_edge(cpu_speeds[2], cpu_speeds[3], ());
+        deps.add_edge(cpu_speeds[2], max_insts[3], ());
+        deps.add_edge(cpu_speeds[3], cpu_speeds[4], ());
 
         UpgradeTree {
             deps,
-            roots: vec![max_insts1],
+            roots: vec![max_insts[0]],
         }
     }
 }
@@ -239,6 +253,7 @@ fn apply_upgrade(
     trigger: Trigger<UpgradeBought>,
     mut cpu_options: ResMut<CpuOptions>,
     mut program_code: ResMut<ProgramCode>,
+    mut unlocked_instructions: ResMut<UnlockedInstructions>,
 ) {
     match trigger.event().upgrade_type {
         UpgradeType::CpuSpeed => {
@@ -256,12 +271,18 @@ fn apply_upgrade(
             );
         }
         UpgradeType::MaxInstructions => {
-            program_code.max_instructions += 1;
+            program_code.max_instructions *= 2;
             tracing::info!(
                 "Applied Max Instructions upgrade: new max instructions = {}",
                 program_code.max_instructions
             );
         }
-        UpgradeType::UnlockIf => todo!(),
+        UpgradeType::UnlockIf => {
+            unlocked_instructions.0.insert(
+                Instruction::IfGapTurnLeft.inst_type(),
+                Instruction::IfGapTurnLeft,
+            );
+            tracing::info!("Applied Unlock If upgrade: now unlocked IfGapTurnLeft instruction");
+        }
     }
 }

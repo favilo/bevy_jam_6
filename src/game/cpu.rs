@@ -11,14 +11,16 @@ use bevy_asset_loader::{
 use bevy_ecs_ldtk::{GridCoords, utils::grid_coords_to_translation};
 #[cfg(feature = "dev_native")]
 use bevy_simple_subsecond_system::hot;
+use multimap::MultiMap;
 
 use crate::{
     game::ticks::Tick,
     state::{GameState, ProgramState},
+    theme::widget,
 };
 
 use super::{
-    level::{ProgramParent, spawn_level_ui},
+    level::{CommandParent, ProgramParent, spawn_level_ui},
     player::PlayerDirection,
 };
 
@@ -33,14 +35,17 @@ pub(super) fn plugin(app: &mut App) {
     );
     app.add_systems(
         OnEnter(GameState::Playing),
-        setup_program_code.after(spawn_level_ui),
+        (setup_program_code, setup_unlocked_instructions).after(spawn_level_ui),
     );
+    app.add_systems(OnExit(GameState::Playing), cleanup_resources);
     app.add_systems(
         FixedUpdate,
         (
             update_cpu_speed_text.run_if(resource_exists_and_changed::<CpuOptions>),
             update_program_code.run_if(resource_exists_and_changed::<ProgramCode>),
-        ),
+            update_command_palette.run_if(resource_exists_and_changed::<UnlockedInstructions>),
+        )
+            .run_if(in_state(GameState::Playing)),
     );
     app.add_observer(handle_tick)
         .add_observer(handle_instruction)
@@ -68,7 +73,7 @@ fn update_cpu_speed_text(
 }
 
 #[allow(dead_code)]
-#[derive(Reflect, Debug, Clone, Copy)]
+#[derive(Reflect, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum InstructionType {
     Movement,
     Control,
@@ -131,10 +136,10 @@ fn handle_tick(
 ) {
     if cpu_state.pc < program_code.code.len() {
         commands.trigger(program_code.code[cpu_state.pc]);
-        cpu_state.pc += 1; // Increment the program counter
+        cpu_state.pc += 1;
     } else {
         tracing::info!("End of program reached.");
-        next_state.set(ProgramState::Buying); // Transition to Buying state
+        next_state.set(ProgramState::Buying);
     }
 }
 
@@ -175,8 +180,25 @@ fn if_gap_turn_left(
         // Turn left by rotating 90 degrees counter-clockwise
         direction.0 = GridCoords::new(direction.0.y, -direction.0.x);
         let angle = Vec2::X.angle_to(Vec2::new(direction.0.x as f32, direction.0.y as f32));
-        transform.rotation = Quat::from_rotation_z(angle);
+        transform.rotation = Quat::from_rotation_z(-angle);
     }
+}
+
+#[derive(Resource, Reflect, Debug, Clone, Deref, DerefMut)]
+#[reflect(Resource, opaque)]
+pub struct UnlockedInstructions(pub MultiMap<InstructionType, Instruction>);
+
+impl Default for UnlockedInstructions {
+    fn default() -> Self {
+        UnlockedInstructions(
+            multimap::multimap!( InstructionType::Movement => Instruction::MoveForward ),
+        )
+    }
+}
+
+#[cfg_attr(feature = "dev_native", hot(rerun_on_hot_reload = true))]
+fn setup_unlocked_instructions(mut commands: Commands) {
+    commands.init_resource::<UnlockedInstructions>();
 }
 
 #[cfg_attr(feature = "dev_native", hot(rerun_on_hot_reload = true))]
@@ -189,6 +211,90 @@ fn setup_program_code(mut commands: Commands) {
     commands.insert_resource(program_code.clone());
 }
 
+fn cleanup_resources(mut commands: Commands) {
+    commands.remove_resource::<ProgramCode>();
+    commands.remove_resource::<CpuOptions>();
+    commands.remove_resource::<CpuState>();
+    commands.remove_resource::<UnlockedInstructions>();
+}
+
+#[cfg_attr(feature = "dev_native", hot)]
+fn update_command_palette(
+    mut commands: Commands,
+    parent: Single<Entity, With<CommandParent>>,
+    children: Query<&Children>,
+    unlocked_instructions: Res<UnlockedInstructions>,
+) {
+    let parent = *parent;
+    for child in children.get(parent).unwrap().iter() {
+        commands.entity(child).despawn();
+    }
+
+    commands.entity(parent).with_children(|parent| {
+        for inst_type in [
+            InstructionType::Movement,
+            InstructionType::Control,
+            InstructionType::Scanning,
+        ] {
+            if let Some(instructions) = unlocked_instructions.get_vec(&inst_type) {
+                spawn_instruction_group(parent, inst_type, instructions);
+            } else {
+                tracing::warn!("No instructions found for type: {:?}", inst_type);
+            }
+        }
+    });
+}
+
+fn spawn_instruction_group(
+    parent: &mut RelatedSpawnerCommands<ChildOf>,
+    inst_type: InstructionType,
+    instructions: &[Instruction],
+) {
+    tracing::info!("Spawning instruction group: {:?}", inst_type);
+    parent
+        .spawn((
+            Name::new(format!("{inst_type:?} Instructions")),
+            Node {
+                flex_direction: FlexDirection::Column,
+                width: Val::Percent(100.0),
+                margin: UiRect::all(Val::Px(3.0)),
+                padding: UiRect::vertical(Val::Px(15.0)),
+                border: UiRect::top(Val::Px(25.0)),
+                ..default()
+            },
+            Text::new(format!("{inst_type:?}")),
+            TextFont::from_font_size(20.0),
+            TextColor(MEDIUM_AQUAMARINE.into()),
+        ))
+        .with_children(|parent| {
+            for instruction in instructions.iter().copied() {
+                parent.spawn((
+                    Name::new(format!("Instruction: {instruction:?}")),
+                    widget::ui_row(children![
+                        (
+                            Node {
+                                width: Val::Percent(100.0),
+                                margin: UiRect::all(Val::Px(5.0)),
+                                ..default()
+                            },
+                            Text::new(format!("{instruction:?}")),
+                            TextFont::from_font_size(18.0),
+                            TextColor(BLANCHED_ALMOND.into()),
+                        ),
+                        widget::button_small("+", move |_: Trigger<Pointer<Click>>, mut program_code: ResMut<ProgramCode>| {
+                            tracing::info!("Adding instruction: {:?}", instruction);
+                            if program_code.code.len() < program_code.max_instructions {
+                                program_code.code.push(instruction);
+                            } else {
+                                tracing::warn!("Maximum instruction limit reached: {}", program_code.max_instructions);
+                            }
+                        }),
+                    ]),
+                ));
+            }
+        });
+}
+
 fn spawn_instruction_item(
     parent: &mut RelatedSpawnerCommands<ChildOf>,
     idx: usize,
@@ -198,15 +304,28 @@ fn spawn_instruction_item(
     parent.spawn((
         Name::new(format!("Instruction: {instruction:?}")),
         Node {
+            flex_direction: FlexDirection::Row,
             grid_column: GridPlacement::start(2),
             grid_row: GridPlacement::start(idx as i16 + 1),
+            justify_content: JustifyContent::SpaceBetween,
             width: Val::Percent(100.0),
             margin: UiRect::all(Val::Px(3.0)),
             ..default()
         },
-        Text::new(format!("{instruction:?}")),
-        TextFont::from_font_size(18.0),
-        TextColor(BLANCHED_ALMOND.into()),
+        children![
+            (
+                Text::new(format!("{instruction:?}")),
+                TextFont::from_font_size(18.0),
+                TextColor(BLANCHED_ALMOND.into()),
+            ),
+            widget::button_small(
+                "-",
+                move |_: Trigger<Pointer<Click>>, mut program_code: ResMut<ProgramCode>| {
+                    tracing::info!("Removing instruction: {:?}", instruction);
+                    program_code.code.remove(idx);
+                }
+            )
+        ],
     ));
 }
 
