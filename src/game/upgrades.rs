@@ -242,7 +242,7 @@ fn apply_upgrade(
 ) {
     match trigger.event().upgrade_type {
         UpgradeType::CpuSpeed => {
-            cpu_options.cpu_tick = cpu_options.cpu_tick / 2;
+            cpu_options.cpu_tick /= 2;
             tracing::info!(
                 "Applied CPU Speed upgrade: new speed = {:?}",
                 cpu_options.cpu_tick
