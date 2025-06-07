@@ -242,26 +242,26 @@ fn apply_upgrade(
 ) {
     match trigger.event().upgrade_type {
         UpgradeType::CpuSpeed => {
-                cpu_options.cpu_tick = cpu_options.cpu_tick / 2;
-                tracing::info!(
-                    "Applied CPU Speed upgrade: new speed = {:?}",
-                    cpu_options.cpu_tick
-                );
-            }
+            cpu_options.cpu_tick = cpu_options.cpu_tick / 2;
+            tracing::info!(
+                "Applied CPU Speed upgrade: new speed = {:?}",
+                cpu_options.cpu_tick
+            );
+        }
         UpgradeType::CpuMultiplier => {
-                cpu_options.multiplier *= 2.0;
-                tracing::info!(
-                    "Applied CPU Multiplier upgrade: new multiplier = {}",
-                    cpu_options.multiplier
-                );
-            }
+            cpu_options.multiplier *= 2.0;
+            tracing::info!(
+                "Applied CPU Multiplier upgrade: new multiplier = {}",
+                cpu_options.multiplier
+            );
+        }
         UpgradeType::MaxInstructions => {
-                program_code.max_instructions += 1;
-                tracing::info!(
-                    "Applied Max Instructions upgrade: new max instructions = {}",
-                    program_code.max_instructions
-                );
-            }
+            program_code.max_instructions += 1;
+            tracing::info!(
+                "Applied Max Instructions upgrade: new max instructions = {}",
+                program_code.max_instructions
+            );
+        }
         UpgradeType::UnlockIf => todo!(),
     }
 }
